@@ -30,10 +30,12 @@
   [m]
   (some->> (seq m)
     sort                     ; sorting makes testing a lot easier :-)
-    (map (fn [[k v]]
-           [(url-encode (name k))
-            "="
-            (url-encode (str v))]))
+    (mapcat (fn [[k vs]]
+              (->> (if (vector? vs) vs [vs])
+                   (map #(vector
+                           (url-encode (name k))
+                           "="
+                           (url-encode (str %)))))))
     (interpose "&")
     flatten
     (apply str)))
@@ -50,9 +52,14 @@
   (when (not (string/blank? qstr))
     (some->> (string/split qstr #"&")
       seq
-      (mapcat split-param)
-      (map url-decode)
-      (apply hash-map))))
+      (reduce (fn [params param]
+                (let [[k v] (map url-decode (split-param param))]
+                  (->> (fn [vs]
+                         (if vs
+                           (conj (if (vector? vs) vs [vs]) v)
+                           v))
+                       (update params k))))
+              {}))))
 
 (defn- port-str
   [protocol port]
