@@ -54,11 +54,12 @@
       seq
       (reduce (fn [params param]
                 (let [[k v] (map url-decode (split-param param))]
-                  (->> (fn [vs]
-                         (if vs
-                           (conj (if (vector? vs) vs [vs]) v)
-                           v))
-                       (update params k))))
+                  (->> ((fn [vs]
+                          (if vs
+                            (conj (if (vector? vs) vs [vs]) v)
+                            v))
+                         (get params k))
+                       (assoc params k))))
               {}))))
 
 (defn- port-str
